@@ -1,0 +1,10 @@
+[Unit]
+Description=Service to update DuckDNS IP
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=echo "this line will be updated on setup-server.sh"
+
+[Install]
+WantedBy=default.target
