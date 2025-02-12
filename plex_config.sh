@@ -4,11 +4,13 @@
 sudo apt update && sudo apt upgrade -y
 
 # Instala dependências
-sudo apt install -y curl wget nano unzip python3 python3-pip git
+sudo apt install -y curl wget nano unzip python3 python3-pip git ufw
+
+sudo ufw enable
 
 # Baixa e instala o Plex Media Server
-wget https://downloads.plex.tv/plex-media-server-new/1.32.1.6999-43e6c633c/debian/plexmediaserver_1.32.1.6999-43e6c633c_amd64.deb
-sudo dpkg -i plexmediaserver_1.32.1.6999-43e6c633c_amd64.deb
+wget https://downloads.plex.tv/plex-media-server-new/1.41.3.9314-a0bfb8370/debian/plexmediaserver_1.41.3.9314-a0bfb8370_amd64.deb
+sudo dpkg -i plexmediaserver_1.41.3.9314-a0bfb8370_amd64.deb
 
 # Habilita e inicia o Plex Media Server
 sudo systemctl enable plexmediaserver
@@ -21,6 +23,8 @@ sudo chown -R plex:plex "$MEDIA_DIR"
 
 # Configura firewall para permitir acesso ao Plex
 sudo ufw allow 32400/tcp
+sudo ufw allow 22/tcp
+sudo ufw reload
 
 # Exibe IP e porta de acesso ao Plex
 IP_ADDRESS=$(hostname -I | awk '{print $1}')
