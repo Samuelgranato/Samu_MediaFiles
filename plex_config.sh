@@ -28,4 +28,6 @@ sudo ufw reload
 
 # Exibe IP e porta de acesso ao Plex
 IP_ADDRESS=$(hostname -I | awk '{print $1}')
-echo "Plex instalado com sucesso! Acesse: http://$IP_ADDRESS:32400/web"
+echo "Plex instalado com sucesso! Reiniciando. Após, acesse: http://$IP_ADDRESS:32400/web"
+
+sudo reboot
