@@ -26,6 +26,7 @@ sudo ufw allow 32400/tcp
 sudo ufw allow 22/tcp
 sudo ufw allow 22000/tcp
 sudo ufw allow 21027/udp
+sudo ufw allow 8384/udp
 echo "y" | sudo ufw reload
 
 # Exibe IP e porta de acesso ao Plex
