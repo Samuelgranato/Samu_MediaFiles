@@ -4,7 +4,7 @@ set -e  # Para o script parar em caso de erro
 
 echo "==> Atualizando sistema e instalando dependências..."
 sudo apt update
-sudo apt install -y curl git docker.io docker-compose
+sudo apt install -y curl git docker.io docker-compose python3-distutils
 
 # Adiciona usuário ao grupo Docker para não precisar de sudo (requer logout para aplicar)
 sudo usermod -aG docker $USER
