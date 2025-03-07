@@ -1,0 +1,40 @@
+version: '3.9'
+
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    ports:
+      - "8096:8096"      # Interface web do Jellyfin
+      - "8920:8920"      # Conexão segura (caso você habilite HTTPS)
+    volumes:
+      - ./jellyfin-config:/config       # Pasta de configuração
+      - ./media:/media                   # Pasta com seus vídeos, filmes e séries
+    environment:
+      - TZ=America/Sao_Paulo
+    restart: unless-stopped
+    networks:
+      - media_network
+
+  syncthing:
+    image: syncthing/syncthing:latest
+    container_name: syncthing
+    ports:
+      - "8384:8384"     # Interface web do Syncthing
+      - "22000:22000/tcp"  # Porta de transferência
+      - "22000:22000/udp"
+      - "21027:21027/udp"  # Descoberta automática
+    volumes:
+      - ./syncthing-config:/var/syncthing/config
+      - ./syncthing-data:/var/syncthing/data
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Sao_Paulo
+    restart: unless-stopped
+    networks:
+      - media_network
+
+networks:
+  media_network:
+    driver: bridge
