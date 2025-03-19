@@ -1,29 +1,27 @@
-version: '3.9'
-
 services:
   jellyfin:
     image: jellyfin/jellyfin:latest
     container_name: jellyfin
     ports:
-      - "8096:8096"      # Interface web do Jellyfin
-      - "8920:8920"      # Conexão segura (caso você habilite HTTPS)
+      - "${JELLYFIN_PORT_INTERNAL}:${JELLYFIN_PORT_INTERNAL}"
+      - "${JELLYFIN_PORT_SECURE}:${JELLYFIN_PORT_SECURE}"
     volumes:
-      - ./jellyfin-config:/config       # Pasta de configuração
-      - ./media:/media                   # Pasta com seus vídeos, filmes e séries
+      - ./jellyfin-config:/config
+      - ./syncthing-data:/media
     environment:
       - TZ=America/Sao_Paulo
     restart: unless-stopped
     networks:
-      - media_network
+      - ${DOCKER_NETWORK}
 
   syncthing:
     image: syncthing/syncthing:latest
     container_name: syncthing
     ports:
-      - "8384:8384"     # Interface web do Syncthing
-      - "22000:22000/tcp"  # Porta de transferência
+      - "8384:8384"
+      - "22000:22000/tcp"
       - "22000:22000/udp"
-      - "21027:21027/udp"  # Descoberta automática
+      - "21027:21027/udp"
     volumes:
       - ./syncthing-config:/var/syncthing/config
       - ./syncthing-data:/var/syncthing/data
@@ -33,7 +31,35 @@ services:
       - TZ=America/Sao_Paulo
     restart: unless-stopped
     networks:
-      - media_network
+      - ${DOCKER_NETWORK}
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "${NGINX_HTTP_PORT}:80"
+      - "${NGINX_HTTPS_PORT}:443"
+      - "${NGINX_CUSTOM_PORT}:${NGINX_CUSTOM_PORT}"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/letsencrypt:/etc/letsencrypt
+      - ./nginx/www:/var/www/html
+    depends_on:
+      - jellyfin
+    restart: unless-stopped
+    networks:
+      - ${DOCKER_NETWORK}
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./nginx/letsencrypt:/etc/letsencrypt
+      - ./nginx/www:/var/www/html
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/html --quiet; sleep 12h & wait $${!}; done'"
+    restart: unless-stopped
+    networks:
+      - ${DOCKER_NETWORK}
 
 networks:
   media_network:

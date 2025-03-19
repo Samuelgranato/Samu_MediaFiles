@@ -1,71 +1,88 @@
 #!/bin/bash
 
-set -e  # Para o script parar em caso de erro
+set -e  # Stop execution if an error occurs
 
-echo "==> Atualizando sistema e instalando dependências..."
-sudo apt update
-sudo apt install -y curl git docker.io docker-compose python3-distutils
+# Load configuration
+if [ ! -f "config.env" ]; then
+    echo "config.env file not found!"
+    exit 1
+fi
+source config.env
 
-# Adiciona usuário ao grupo Docker para não precisar de sudo (requer logout para aplicar)
-sudo usermod -aG docker $USER
+# echo "==> Updating system and installing Docker and dependencies..."
+# sudo apt update
+# sudo apt install -y curl git docker.io docker-compose certbot
 
-# Cria diretório do servidor e subdiretórios
-BASE_DIR="$HOME/meu-servidor"
-mkdir -p "$BASE_DIR"/{jellyfin-config,media,syncthing-config,syncthing-data}
+# # Add user to the Docker group if necessary
+# if ! groups $USER | grep -q '\bdocker\b'; then
+#     echo "==> Adding $USER to the docker group..."
+#     sudo usermod -aG docker $USER
+#     echo "==> Log out or restart for the docker group to apply to your user."
+#     DOCKER_SUDO="sudo"
+# else
+#     DOCKER_SUDO=""
+# fi
 
-# Cria docker-compose.yml dentro do diretório do servidor
-cat <<EOF > "$BASE_DIR/docker-compose.yml"
-version: '3.9'
+# # Create necessary directories
+# mkdir -p "$BASE_DIR"/{jellyfin-config,media,syncthing-config,syncthing-data,nginx/letsencrypt,nginx/www}
+# mkdir -p "$HOME/duckdns"
 
-services:
-  jellyfin:
-    image: jellyfin/jellyfin:latest
-    container_name: jellyfin
-    ports:
-      - "8096:8096"
-      - "8920:8920"
-    volumes:
-      - ./jellyfin-config:/config
-      - ./media:/media
-    environment:
-      - TZ=America/Sao_Paulo
-    restart: unless-stopped
-    networks:
-      - media_network
+# # Verify if the DuckDNS API key exists
+# if [ ! -f "$DUCKDNS_API_KEY_FILE" ]; then
+#     echo "DuckDNS API key file not found!"
+#     echo "Create the file $DUCKDNS_API_KEY_FILE with your API key before proceeding."
+#     exit 1
+# fi
 
-  syncthing:
-    image: syncthing/syncthing:latest
-    container_name: syncthing
-    ports:
-      - "8384:8384"
-      - "22000:22000/tcp"
-      - "22000:22000/udp"
-      - "21027:21027/udp"
-    volumes:
-      - ./syncthing-config:/var/syncthing/config
-      - ./syncthing-data:/var/syncthing/data
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=America/Sao_Paulo
-    restart: unless-stopped
-    networks:
-      - media_network
 
-networks:
-  media_network:
-    driver: bridge
-EOF
 
-# Move para a pasta do servidor
+# Copy configuration files
+echo "==> Copying configuration files..."
+cp duckdns/update.sh "$HOME/duckdns/update.sh"
+chmod +x "$HOME/duckdns/update.sh"
+
+# Modify only the `ExecStart` line dynamically inside the existing `duckdns.service`
+echo "==> Configuring DuckDNS systemd service..."
+sudo sed -i "s|ExecStart=.*|ExecStart=/bin/bash -c 'source \$HOME/server/config.env \&\& \$HOME/duckdns/update.sh'|" duckdns/duckdns.service
+
+sudo cp duckdns/duckdns.service /etc/systemd/system/duckdns.service
+sudo cp duckdns/duckdns.timer /etc/systemd/system/duckdns.timer
+
+sudo cp nginx/nginx.conf "$BASE_DIR/nginx/nginx.conf"
+cp docker-compose.yml "$BASE_DIR/docker-compose.yml"
+
+# Configure DuckDNS service
+echo "==> Configuring DuckDNS service..."
+sudo systemctl daemon-reload
+sudo systemctl enable duckdns.timer
+sudo systemctl start duckdns.timer
+
+# Ask user if they want to generate an SSL certificate now
+echo "🔹 Do you want to generate the SSL certificate now? (y/n)"
+read -r GENERATE_SSL
+
+if [[ "$GENERATE_SSL" == "y" ]]; then
+    echo "==> Generating SSL certificate for $CUSTOM_DOMAIN..."
+    $DOCKER_SUDO docker run --rm -it \
+    -v "$BASE_DIR/nginx/letsencrypt:/etc/letsencrypt" \
+    certbot/certbot certonly --manual --preferred-challenges dns \
+    -d "$CUSTOM_DOMAIN" --agree-tos --no-eff-email --email "$SSL_EMAIL"
+
+    echo "SSL certificate successfully generated!"
+else
+    echo "Skipping SSL certificate generation."
+fi
+
+# Start services
 cd "$BASE_DIR"
+cp config.env "$BASE_DIR/.env"
+set -a
+source .env
+set +a 
 
-# Sobe os containers
-echo "==> Subindo Jellyfin e Syncthing..."
-docker-compose up -d
+echo "==> Starting services with Docker Compose..."
+$DOCKER_SUDO docker compose up -d
 
-echo "==> Instalação completa!"
-echo "Acesse Jellyfin em: http://localhost:8096"
-echo "Acesse Syncthing em: http://localhost:8384"
-
-echo "==> IMPORTANTE: Faça logout ou reinicie para o grupo docker aplicar ao seu usuário."
+echo "==> Setup completed!"
+echo "Access Jellyfin: https://$CUSTOM_DOMAIN:$JELLYFIN_PORT_EXTERNAL"
+echo "Access Syncthing: http://localhost:8384"
