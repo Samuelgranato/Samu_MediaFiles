@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -c 'source /home/samuelgranato/server/config.env && /home/samuelgranato/duckdns/update.sh'
+ExecStart=-
 
 [Install]
 WantedBy=default.target

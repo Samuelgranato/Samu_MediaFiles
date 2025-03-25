@@ -8,6 +8,7 @@ if [ ! -f "config.env" ]; then
     exit 1
 fi
 source config.env
+cp config.env "$BASE_DIR/.env"
 
 # echo "==> Updating system and installing Docker and dependencies..."
 # sudo apt update
@@ -23,29 +24,30 @@ source config.env
 #     DOCKER_SUDO=""
 # fi
 
-# # Create necessary directories
-# mkdir -p "$BASE_DIR"/{jellyfin-config,media,syncthing-config,syncthing-data,nginx/letsencrypt,nginx/www}
-# mkdir -p "$HOME/duckdns"
+# Create necessary directories
+mkdir -p "$BASE_DIR"/{jellyfin-config,media,syncthing-config,syncthing-data,nginx/letsencrypt,nginx/www}
+mkdir -p "$HOME/duckdns"
 
-# # Verify if the DuckDNS API key exists
-# if [ ! -f "$DUCKDNS_API_KEY_FILE" ]; then
-#     echo "DuckDNS API key file not found!"
-#     echo "Create the file $DUCKDNS_API_KEY_FILE with your API key before proceeding."
-#     exit 1
-# fi
-
-
+# Verify if the DuckDNS API key exists
+if [ ! -f "$DUCKDNS_API_KEY_FILE" ]; then
+    echo "DuckDNS API key file not found!"
+    echo "Create the file $DUCKDNS_API_KEY_FILE with your API key before proceeding."
+    exit 1
+fi
 
 # Copy configuration files
 echo "==> Copying configuration files..."
 cp duckdns/update.sh "$HOME/duckdns/update.sh"
+cp duckdns/duckdns.service "$HOME/duckdns/duckdns.service"
 chmod +x "$HOME/duckdns/update.sh"
 
 # Modify only the `ExecStart` line dynamically inside the existing `duckdns.service`
 echo "==> Configuring DuckDNS systemd service..."
-sudo sed -i "s|ExecStart=.*|ExecStart=/bin/bash -c 'source \$HOME/server/config.env \&\& \$HOME/duckdns/update.sh'|" duckdns/duckdns.service
+sudo sed -i "s|source.*|source $HOME/server/config.env|" "$HOME/duckdns/update.sh"
+sudo sed -i "s|curl.*|curl -k -o $HOME/duckdns/duckdns.log -K -|" "$HOME/duckdns/update.sh"
+sudo sed -i "s|ExecStart=.*|ExecStart=/bin/bash -c '$HOME/duckdns/update.sh'|" $HOME/duckdns/duckdns.service
 
-sudo cp duckdns/duckdns.service /etc/systemd/system/duckdns.service
+sudo cp "$HOME/duckdns/duckdns.service" /etc/systemd/system/duckdns.service
 sudo cp duckdns/duckdns.timer /etc/systemd/system/duckdns.timer
 
 sudo cp nginx/nginx.conf "$BASE_DIR/nginx/nginx.conf"
@@ -54,6 +56,10 @@ cp docker-compose.yml "$BASE_DIR/docker-compose.yml"
 # Configure DuckDNS service
 echo "==> Configuring DuckDNS service..."
 sudo systemctl daemon-reload
+
+sudo systemctl enable duckdns.service
+sudo systemctl start duckdns.service
+
 sudo systemctl enable duckdns.timer
 sudo systemctl start duckdns.timer
 
