@@ -186,7 +186,7 @@ This project is licensed under the **MIT License**.
 
 ## 🌟 Support & Contributions
 
-- **Found a bug?** Open an [issue](https://https://github.com/Samuelgranato/Samu_MediaFiles/issues)
+- **Found a bug?** Open an [issue](https://github.com/Samuelgranato/Samu_MediaFiles/issues)
 - **Want to contribute?** Fork the repo and submit a pull request!
 
 🚀 Happy self-hosting!
