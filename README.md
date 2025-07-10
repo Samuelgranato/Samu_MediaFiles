@@ -1,121 +1,93 @@
-# 🚀 Self-Hosted Media Server
 
-This project provides an automated setup for a self-hosted media server using **Jellyfin**, **Syncthing**, **NGINX (reverse proxy with SSL)**, and **DuckDNS** for dynamic DNS. The setup is containerized using **Docker Compose**.
+# 🚀 Self-Hosted Media Server com Cloudflare DDNS
 
----
-
-## What You Can Do With This Setup
-
-### ✅ **Secure Media Streaming (HTTPS)**
-
-- **Jellyfin** is used as the media server, allowing you to stream your movies, TV shows, and music from anywhere.
-- With **NGINX** as a reverse proxy and **Let's Encrypt SSL**, your media is served securely via HTTPS.
-
-### 🌎 **Access Your Server from Anywhere (Dynamic DNS)**
-
-- **DuckDNS** ensures that even if your public IP changes, your server remains accessible with a custom domain.
-- This is perfect for home-hosted servers where IP addresses can change frequently.
-
-### 🔄 **Automatic Media Synchronization**
-
-- **Syncthing** allows you to automatically sync your media files across multiple devices, including:
-  - Other servers
-  - Personal computers
-  - Mobile devices 📱
-- This ensures that your media collection is always up-to-date, regardless of where you store or edit files.
-
-### 💰 **Completely Free & Open Source**
-
-- Unlike paid streaming solutions, this setup is **100% free** with no monthly costs.
-- Jellyfin is an **open-source alternative to Plex**, offering full customization and no forced subscriptions.
-
-### 🚀 **Optimized for Performance**
-
-- Uses **Docker Compose** for simple deployment and management.
-- Secure configuration with **automatic SSL renewal** and **port forwarding** recommendations.
+Este projeto oferece um setup automatizado para um servidor de mídia local utilizando **Jellyfin**, **Syncthing**, **NGINX (com proxy reverso e SSL)** e **Cloudflare** para DNS dinâmico e emissão automática de certificados com Certbot.
 
 ---
 
-This setup is ideal for those who want **full control** over their media streaming, backups, and remote access **without relying on third-party services**. 💪
+## ✅ Funcionalidades
+
+- 🎞️ **Streaming seguro de mídia com HTTPS via Jellyfin**
+- 🌐 **Atualização automática de IP usando Cloudflare DDNS**
+- 🔐 **Certificados SSL automáticos com Certbot + plugin Cloudflare**
+- ♻️ **Sincronização de arquivos entre dispositivos via Syncthing**
+- 🐳 **Ambiente isolado com Docker Compose**
+- 🧠 **Script de instalação inteligente que automatiza tudo**
 
 ---
 
-## 🛠️ Installation Guide
+## 🧾 Requisitos
 
-### 1️⃣ Clone the Repository
+- Ubuntu 22.04 ou superior
+- Conta na [Cloudflare](https://dash.cloudflare.com/)
+- Token de API da Cloudflare com permissões para:
+  - Editar zona DNS (Zone.DNS)
+  - Ler zona (Zone.Zone)
+
+---
+
+## 🔧 Instalação
+
+### 1️⃣ Clone o repositório
 
 ```bash
 git clone https://github.com/Samuelgranato/Samu_MediaFiles.git
 cd Samu_MediaFiles
 ```
 
-### 2️⃣ Configure Environment Variables
+### 2️⃣ Configure o arquivo `.env`
 
-Rename the provided `default_config.env` file to `config.env`:
+Copie o exemplo:
 
 ```bash
 cp default_config.env config.env
 ```
 
-Edit `config.env` to match your desired configuration:
+Edite `config.env` com suas configurações:
 
-```bash
-nano config.env
+```dotenv
+CLOUDFLARE_API_TOKEN=seu_token
+CLOUDFLARE_ZONE_ID=sua_zone_id
+CUSTOM_DOMAIN=seudominio.com
+SSL_EMAIL=seu@email.com
+
+JELLYFIN_PORT_INTERNAL=8096
+JELLYFIN_PORT_EXTERNAL=44889
+NGINX_HTTP_PORT=80
+NGINX_HTTPS_PORT=443
+
+BASE_DIR=$HOME/server
+SYSTEM_USER=seu_usuario_linux
 ```
 
-> Ensure you provide your **DuckDNS API key** and **custom domain (if applicable)**.
-
-### 3️⃣ Run the Installation Script
-
-Execute the setup script:
+### 3️⃣ Execute o script de instalação
 
 ```bash
-bash setup-server.sh
+chmod +x setup-server.sh
+./setup-server.sh
 ```
-
-This script will:
-
-- Install necessary dependencies (Docker, Certbot, etc.).
-- Configure DuckDNS.
-- Set up the **NGINX reverse proxy** with SSL.
-- Deploy the **Docker Compose stack**.
-
-### 4️⃣ Access Your Services
-
-- **Jellyfin**: `https://your-custom-domain:YOUR_EXTERNAL_PORT`
-- **Syncthing**: `http://localhost:8384`
 
 ---
 
-## ⚙️ Configuration Overview
+## 🖥️ Serviços
 
-### **Environment Variables (config.env)**
+- Jellyfin: `https://seudominio.com:44889`
+- Syncthing: `http://localhost:8384`
+- Certbot + NGINX: HTTPS com proxy reverso
+- Cloudflare DDNS via serviço systemd
 
-| Variable                 | Description                                              |
-| ------------------------ | -------------------------------------------------------- |
-| `DUCKDNS_API_KEY`        | Your **DuckDNS API Key** (mandatory)                     |
-| `DUCKDNS_SUBDOMAIN`      | Your **DuckDNS subdomain**                               |
-| `CUSTOM_DOMAIN`          | Your **custom domain (e.g., example.com)**               |
-| `SSL_EMAIL`              | Your email for Let's Encrypt                             |
-| `JELLYFIN_PORT_INTERNAL` | Jellyfin's internal port (default: 8096)                 |
-| `JELLYFIN_PORT_SECURE`   | Jellyfin's secure port (default: 8920)                   |
-| `JELLYFIN_PORT_EXTERNAL` | **Port to expose externally (must be opened in router)** |
-| `NGINX_HTTP_PORT`        | Nginx HTTP port (default: 80)                            |
-| `NGINX_HTTPS_PORT`       | Nginx HTTPS port (default: 443)                          |
-| `NGINX_CUSTOM_PORT`      | Custom port for external access (default: 44889)         |
-| `DOCKER_NETWORK`         | Docker network name (default: media_network)             |
-| `SYSTEM_USER`            | Your system user (used for service permissions)          |
+---
 
-## 🔄 Updating
+## 🔄 Atualizações
 
-To update services, run:
+Atualizar serviços Docker:
 
 ```bash
 docker compose pull
 docker compose up -d
 ```
 
-To update the **SSL certificate**, run:
+Renovar certificado manualmente (geralmente automático):
 
 ```bash
 docker exec certbot certbot renew --force-renewal
@@ -123,70 +95,57 @@ docker exec certbot certbot renew --force-renewal
 
 ---
 
-## ❓ Troubleshooting
+## 🧪 Solução de Problemas
 
-### NGINX Fails to Start Due to SSL Certificate Error
+### Erro no NGINX: "invalid number of arguments"
 
-If NGINX fails with an error related to missing certificates, ensure they exist at:
+Verifique se seu `nginx.conf.template` contém variáveis válidas como:
 
-```bash
-ls -l $HOME/server/nginx/letsencrypt/live/your-domain.com/
+```nginx
+proxy_set_header Host $host;
 ```
 
-If missing, regenerate them manually:
+Evite usar `\$host` dentro do template.
+
+### Certificado SSL ausente
+
+Certifique-se de que os certificados estão montados corretamente:
 
 ```bash
-docker run --rm -it \
-  -v "$HOME/server/nginx/letsencrypt:/etc/letsencrypt" \
-  certbot/certbot certonly --manual --preferred-challenges dns \
-  -d "your-domain.com" --agree-tos --no-eff-email --email "your-email@example.com"
-```
-
-### Ports Are Not Open
-
-Check if your firewall allows external access:
-
-```bash
-sudo ufw status
-```
-
-Ensure your **router's port forwarding** maps the correct external ports to internal ones.
-
-### DuckDNS Is Not Updating
-
-Verify the systemd service status:
-
-```bash
-sudo systemctl status duckdns
-```
-
-Run the script manually:
-
-```bash
-bash ~/duckdns/update.sh
+ls $BASE_DIR/nginx/letsencrypt/live/seudominio.com/
 ```
 
 ---
 
-## 📜 License
+## 📂 Estrutura do Projeto
 
-This project is licensed under the **MIT License**.
+```
+server/
+├── certbot/
+├── cloudflare-ddns/
+├── media/
+├── jellyfin-config/
+├── syncthing-config/
+├── syncthing-data/
+├── nginx/
+│   ├── nginx.conf.template
+│   ├── letsencrypt/
+│   └── www/
+└── docker-compose.yml
+```
 
 ---
 
-## 🙌 Credits
+## 📜 Licença
+
+MIT © Samuel Granato
+
+---
+
+## 🙌 Créditos
 
 - [Jellyfin](https://jellyfin.org/)
 - [Syncthing](https://syncthing.net/)
 - [NGINX](https://nginx.org/)
-- [DuckDNS](https://www.duckdns.org/)
-- [Let's Encrypt](https://letsencrypt.org/)
-
----
-
-## 🌟 Support & Contributions
-
-- **Found a bug?** Open an [issue](https://github.com/Samuelgranato/Samu_MediaFiles/issues)
-- **Want to contribute?** Fork the repo and submit a pull request!
-
-🚀 Happy self-hosting!
+- [Cloudflare](https://cloudflare.com/)
+- [Certbot](https://certbot.eff.org/)
