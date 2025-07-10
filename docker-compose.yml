@@ -51,12 +51,13 @@ services:
       - ${DOCKER_NETWORK}
 
   certbot:
-    image: certbot/certbot
+    image: certbot-with-cloudflare
     container_name: certbot
     volumes:
       - ./nginx/letsencrypt:/etc/letsencrypt
       - ./nginx/www:/var/www/html
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/html --quiet; sleep 12h & wait $${!}; done'"
+      - ./cloudflare-ddns/cloudflare.ini:/root/.cloudflare.ini # se precisar no renew
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --dns-cloudflare --dns-cloudflare-credentials /root/.cloudflare.ini --quiet; sleep 12h & wait $${!}; done'"
     restart: unless-stopped
     networks:
       - ${DOCKER_NETWORK}

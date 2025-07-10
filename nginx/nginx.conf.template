@@ -3,7 +3,7 @@ events {}
 http {
     server {
         listen 80;
-        server_name granato.tech;
+        server_name ${CUSTOM_DOMAIN};
 
         location /.well-known/acme-challenge/ {
             root /var/www/html;
@@ -16,8 +16,8 @@ http {
 
     server {
         listen 443 ssl;
-        listen 44889 ssl;
-        server_name granato.tech;
+        listen ${JELLYFIN_PORT_EXTERNAL} ssl;
+        server_name ${CUSTOM_DOMAIN};
 
         ssl_certificate /etc/letsencrypt/live/granato.tech/fullchain.pem;
         ssl_certificate_key /etc/letsencrypt/live/granato.tech/privkey.pem;

@@ -1,0 +1,6 @@
+[Unit]
+Description=Cloudflare DDNS Updater
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash __PATH__/cloudflare-ddns/update.sh
